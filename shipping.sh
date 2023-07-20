@@ -3,6 +3,7 @@ yum install maven -y
 echo -e "\e[32m <<<<<<<< add user>>>>>>>>>>\e[0m"
 useradd roboshop
 echo -e "\e[32m <<<<<<<< create app directory>>>>>>>>>>\e[0m"
+rm -rf /app
 mkdir /app
 echo -e "\e[32m <<<<<<<< download shipping repo>>>>>>>>>>\e[0m"
 curl -L -o /tmp/shipping.zip https://roboshop-artifacts.s3.amazonaws.com/shipping.zip
