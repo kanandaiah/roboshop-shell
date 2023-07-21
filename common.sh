@@ -8,6 +8,7 @@ print_head() {
 }
 
 schema_setup() {
+  if [ "$schema_setup" == "mongo" ]; then
   print_head "copy mongo repo files"
   cp ${script_path}/mongo.repo /etc/yum.repos.d/mongo.repo
 
@@ -15,6 +16,7 @@ schema_setup() {
   yum install mongodb-org-shell -y
   print_head "mongo ip address"
   mongo --host mongodb-dev.kanand.online </app/schema/${component}.js
+  fi
 }
 func_nodejs()
 {
