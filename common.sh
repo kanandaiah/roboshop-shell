@@ -3,54 +3,74 @@ script=$(realpath "$0")
 script_path=$(dirname "$script")
 source ${script_path}/common.sh
 
-print_head() {
-  echo -e "\e[32m <<<<<<<< $1>>>>>>>>>>\e[0m"
+func_print_head() {
+  func_print_head<< $1>>>>>>>>>>\e[0m"
 }
 
-schema_setup() {
+func_schema_setup() {
   if [ "$schema_setup" == "mongo" ]; then
-  print_head "copy mongo repo files"
-  cp ${script_path}/mongo.repo /etc/yum.repos.d/mongo.repo
-
-  print_head "install mongodb"
-  yum install mongodb-org-shell -y
-  print_head "mongo ip address"
-  mongo --host mongodb-dev.kanand.online </app/schema/${component}.js
+    func_print_head "copy mongo repo files"
+    cp ${script_path}/mongo.repo /etc/yum.repos.d/mongo.repo
+    func_print_head "install mongodb"
+    yum install mongodb-org-shell -y
+    func_print_head "mongo ip address"
+    mongo --host mongodb-dev.kanand.online </app/schema/${component}.js
+  fi
+  if [ "$schema_setup" == "mysql" ]; then
+    func_print_head "install mysql"
+    yum install mysql -y
+    func_print_head "load msql schema"
+    mysql -h mysql-dev.kanand.online -uroot -p${mysql_root_password} < /app/schema/${component}.sql
   fi
 }
+func_app_prereq() {
+   func_print_head "add user"
+   useradd ${app_user}
+   func_print_head "create app directory"
+   rm -rf /app
+   mkdir /app
+   func_print_head "download shipping repo"
+   curl -L -o /tmp/${component}.zip https://roboshop-artifacts.s3.amazonaws.com/${component}.zip
+   cd /app
+   func_print_head "unzinping files"
+   unzip /tmp/${component}.zip
+
+}
+func_systemd_setup() {
+   func_print_head "copy systemd service"
+   cp ${script_path}/${component}.service /etc/systemd/system/${component}.service
+   func_print_head "daemon reload"
+   systemctl daemon-reload
+   func_print_head "enable and start"
+   systemctl enable ${component}
+   systemctl restart ${component}
+  }
 func_nodejs()
 {
-print_head "rpm file"
-curl -sL https://rpm.nodesource.com/setup_lts.x | bash
+  func_print_head "rpm file"
+  curl -sL https://rpm.nodesource.com/setup_lts.x | bash
 
-print_head "install node js"
-yum install nodejs -y
+  func_print_head "install node js"
+  yum install nodejs -y
 
-print_head "add roboshop"
-useradd ${app_user}
+  func_app_prereq
 
-print_head "create app directory"
-rm -rf /app
-mkdir /app
+  func_print_head "install npm"
+  npm install
+  func_schema_setup
+  func_systemd_setup
 
-print_ head "donload ip file"
-curl -o /tmp/${component}.zip https://roboshop-artifacts.s3.amazonaws.com/${component}.zip
-cd /app
+}
 
-print_head "extract ip file"
-unzip /tmp/${component}.zip
+func_java() {
+  func_print_head "install maven"
+  yum install maven -y
+  func_app_prereq
+  func_print_head  "clean package"
+  mvn clean package
+  func_print_head "name changing"
+  mv target/${component}-1.0.jar ${component}.jar
+  func_schema_setup
+  func_systemd_setup
 
-print_head "install npm"
-npm install
-
-print_head "copy cart service"
-cp ${script_path}/${component}.service /etc/systemd/system/${component}.service
-
-print_head "reaload daemon service"
-systemctl daemon-reload
-
-print_head "enable and start service"
-systemctl enable ${component}
-systemctl restart ${component}
-schema_setup
 }
